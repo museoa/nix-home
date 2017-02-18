@@ -84,12 +84,16 @@ if [[ "$performLink" = "true" ]]; then
   fi
 fi
 
+nix_env_cmd=(
+  nix-env -I "$NIXHOME" -p "$ROOT" -f "$HOME" "$op" "$@"
+)
+
 if [[ "$PRINTCMDS" = "true" ]]; then
-  echo "nix-env -I '$NIXHOME' -p '$ROOT' -f '$HOME' '$op' $* || fail" >&2
+  info "${nix_env_cmd[@]}"
 fi
 
 # run the actual command
-nix-env -I "$NIXHOME" -p "$ROOT" -f "$HOME" $op "$@" || fail
+"${nix_env_cmd[@]}" || fail
 
 # quit if we have skipped linking
 if [[ "$performLink" != "true" ]]; then
@@ -179,3 +183,5 @@ done < "$TMPFILE"
 
 # cleanup
 rm "$TMPFILE"
+
+info "Done!"

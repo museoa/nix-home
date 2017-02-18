@@ -1,5 +1,6 @@
 from distutils import dir_util
 import json
+import logging
 import os
 import shutil
 import sys
@@ -9,8 +10,8 @@ def mkdir(d):
     try:
         os.makedirs(d)
     except OSError:
-        # It probably already existed.
-        pass
+        if os.path.isdir(d):
+            pass  # It already existed.
 
 def main(argv):
     f = argv[1]
@@ -24,10 +25,10 @@ def main(argv):
             dst = os.path.join(out, key)
 
             if os.path.isdir(src):
-                print "Copy dir %s" % dst
+                logging.debug("Copy dir %s", dst)
                 dir_util.copy_tree(src, dst)
             else:
-                print "Copy file %s" % dst
+                logging.debug("Copy file %s", dst)
                 mkdir(os.path.dirname(dst))
                 shutil.copyfile(src, dst)
 
@@ -36,12 +37,12 @@ def main(argv):
             mkdir(os.path.dirname(dst))
 
             if "content" in src:
-                print "Creating file %s" % dst
+                logging.debug("Creating file %s", dst)
                 with open(dst, "w") as dst_fh:
                     dst_fh.write(src["content"])
 
             elif "link" in src:
-                print "Symlinking %s" % dst
+                logging.debug("Symlinking %s", dst)
                 os.symlink(src["link"], dst)
 
 if __name__ == '__main__':
