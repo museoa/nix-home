@@ -1,25 +1,48 @@
+from distutils import dir_util
 import json
-import sys
 import os
+import shutil
+import sys
 
-f = open(sys.argv[1])
-out = sys.argv[2]
-data = json.load(f)
 
-for key in data["files"]:
-    val = data["files"][key]
+def mkdir(d):
     try:
-        os.makedirs(out + "/" + os.path.dirname(key))
-    except:
-        print "ignoring error"
+        os.makedirs(d)
+    except OSError:
+        # It probably already existed.
+        pass
 
-    if type(val) == str or type(val) == unicode:
-        print "Symlinking " + out + "/" + key
-        os.symlink(val, out + "/" + key)
+def main(argv):
+    f = argv[1]
+    out = argv[2]
+    with open(f) as fh:
+        data = json.load(fh)
 
-    if type(val) == dict:
-        print "Creating file " + out + "/" + key
-        with open(out + "/" + key, "w") as f:
-            f.write(val["content"].encode('UTF-8'))
-            if "mode" in val:
-                os.chmod(out + "/" + key, int(val["mode"], 8))
+    for key, src in data["files"].items():
+
+        if type(src) in [str, unicode]:
+            dst = os.path.join(out, key)
+
+            if os.path.isdir(src):
+                print "Copy dir %s" % dst
+                dir_util.copy_tree(src, dst)
+            else:
+                print "Copy file %s" % dst
+                mkdir(os.path.dirname(dst))
+                shutil.copyfile(src, dst)
+
+        elif type(src) == dict:
+            dst = os.path.join(out, key)
+            mkdir(os.path.dirname(dst))
+
+            if "content" in src:
+                print "Creating file %s" % dst
+                with open(dst, "w") as dst_fh:
+                    dst_fh.write(src["content"])
+
+            elif "link" in src:
+                print "Symlinking %s" % dst
+                os.symlink(src["link"], dst)
+
+if __name__ == '__main__':
+    main(sys.argv)
